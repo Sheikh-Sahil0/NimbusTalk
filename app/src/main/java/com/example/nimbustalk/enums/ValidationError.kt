@@ -23,10 +23,8 @@ enum class ValidationError(val message: String) {
         return this == NONE
     }
 
-    // Get error message
-    fun getMessage(): String {
-        return message
-    }
+    // Note: getMessage() is automatically generated from val message: String
+    // You can access it directly as: validationError.message
 
     companion object {
         // Get validation error from string message
