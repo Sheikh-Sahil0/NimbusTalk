@@ -82,4 +82,16 @@
 
     <!-- Material Design elevation colors -->
     <color name="elevation_overlay">#0DFFFFFF</color>
+
+    <!-- NEW: Error and Success Message Backgrounds -->
+    <color name="error_background">#FFEBEE</color>
+    <color name="error_background_dark">#2C1B1F</color>
+    <color name="success_background">#E8F5E8</color>
+    <color name="success_background_dark">#1B2F1B</color>
+
+    <!-- NEW: Input field colors to prevent overlapping -->
+    <color name="input_stroke_color">#CCCCCC</color>
+    <color name="input_stroke_color_dark">#444444</color>
+    <color name="input_stroke_focused">#0077B3</color>
+    <color name="input_background_light">#FAFAFA</color>
 </resources>
