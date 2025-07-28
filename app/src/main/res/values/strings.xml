@@ -61,4 +61,19 @@
     <string name="camera">Camera</string>
     <string name="gallery">Gallery</string>
     <string name="remove_image">Remove Image</string>
+
+    <!-- NEW: Login screen specific strings -->
+    <string name="welcome_back">Welcome Back!</string>
+    <string name="sign_in_subtitle">Sign in to continue chatting</string>
+    <string name="dont_have_account">Don\'t have an account?</string>
+    <string name="already_have_account">Already have an account?</string>
+    <string name="sign_in">Sign In</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="create_account">Create Account</string>
+
+    <!-- NEW: Validation messages -->
+    <string name="email_required">Email is required</string>
+    <string name="password_required">Password is required</string>
+    <string name="invalid_credentials">Invalid email or password</string>
+    <string name="account_created">Account created successfully</string>
 </resources>

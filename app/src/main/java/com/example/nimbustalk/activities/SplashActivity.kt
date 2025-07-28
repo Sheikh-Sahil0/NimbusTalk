@@ -209,7 +209,8 @@ class SplashActivity : AppCompatActivity() {
     private fun navigateToNextScreen(isAuthenticated: Boolean) {
         startExitAnimations {
             val intent = if (isAuthenticated) {
-                Intent(this, HomeActivity::class.java)
+//                Intent(this, HomeActivity::class.java)
+                Intent(this, LoginActivity::class.java)
             } else {
                 Intent(this, LoginActivity::class.java)
             }

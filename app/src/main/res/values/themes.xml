@@ -16,6 +16,7 @@
         <item name="android:colorBackground">@color/background_color</item>
         <item name="colorSurface">@color/surface_color</item>
         <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
 
         <!-- Accent/Tertiary -->
         <item name="colorTertiary">@color/accent_color</item>
@@ -24,6 +25,9 @@
         <!-- Error colors -->
         <item name="colorError">@color/error_color</item>
         <item name="colorOnError">@color/white</item>
+
+        <!-- Outline colors -->
+        <item name="colorOutline">@color/input_stroke_color</item>
 
         <!-- Status bar -->
         <item name="android:statusBarColor">@color/my_primary_dark</item>
@@ -43,6 +47,7 @@
         <item name="cornerRadius">8dp</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
+        <item name="android:minHeight">48dp</item>
     </style>
 
     <style name="SecondaryButton" parent="Widget.Material3.Button.OutlinedButton">
@@ -50,16 +55,41 @@
         <item name="android:textColor">@color/button_secondary_text</item>
         <item name="cornerRadius">8dp</item>
         <item name="android:textSize">16sp</item>
+        <item name="android:minHeight">48dp</item>
     </style>
 
-    <!-- Input Field Styles -->
+    <!-- FIXED: Input Field Styles - No Overlapping -->
     <style name="InputField" parent="Widget.Material3.TextInputLayout.OutlinedBox">
-        <item name="boxStrokeColor">@color/my_primary</item>
+        <item name="boxStrokeColor">@color/input_stroke_focused</item>
+<!--        <item name="boxStrokeColorStateList">@color/input_stroke_state_list</item>-->
+        <item name="boxBackgroundColor">@color/input_background_light</item>
         <item name="hintTextColor">@color/text_hint</item>
         <item name="android:textColorHint">@color/text_hint</item>
+        <item name="boxCornerRadiusTopStart">8dp</item>
+        <item name="boxCornerRadiusTopEnd">8dp</item>
+        <item name="boxCornerRadiusBottomStart">8dp</item>
+        <item name="boxCornerRadiusBottomEnd">8dp</item>
+        <item name="startIconTint">@color/text_hint</item>
+        <item name="endIconTint">@color/text_hint</item>
+        <item name="hintAnimationEnabled">true</item>
+        <item name="expandedHintEnabled">true</item>
+        <!-- Prevent icon overlap -->
+        <item name="android:paddingStart">0dp</item>
+        <item name="android:paddingEnd">0dp</item>
     </style>
 
-    <!-- Chat Bubble Styles (FIXED - using same names for both themes) -->
+    <!-- Input EditText Style -->
+    <style name="InputEditText" parent="Widget.Material3.TextInputEditText.OutlinedBox">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:paddingTop">16dp</item>
+        <item name="android:paddingBottom">16dp</item>
+        <item name="android:minHeight">56dp</item>
+    </style>
+
+    <!-- Chat Bubble Styles -->
     <style name="SentMessageBubble">
         <item name="android:background">@drawable/bg_message_sent</item>
         <item name="android:textColor">@color/message_sent_text</item>
@@ -79,5 +109,25 @@
         <item name="android:background">@color/my_primary</item>
         <item name="titleTextColor">@color/white</item>
         <item name="android:elevation">4dp</item>
+    </style>
+
+    <!-- Error Message Style -->
+    <style name="ErrorMessage">
+        <item name="android:textColor">@color/error_color</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:padding">12dp</item>
+        <item name="android:background">@drawable/bg_error_message</item>
+        <item name="android:drawablePadding">8dp</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+
+    <!-- Success Message Style -->
+    <style name="SuccessMessage">
+        <item name="android:textColor">@color/success_color</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:padding">12dp</item>
+        <item name="android:background">@drawable/bg_success_message</item>
+        <item name="android:drawablePadding">8dp</item>
+        <item name="android:gravity">center_vertical</item>
     </style>
 </resources>

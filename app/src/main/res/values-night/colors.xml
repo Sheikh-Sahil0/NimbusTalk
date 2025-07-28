@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base colors -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="light_grey">#B3B2B2</color>
+
+    <!-- Your primary blue theme -->
+    <color name="my_primary">#4A90E2</color>
+    <color name="my_primary_dark">#2171C7</color>
+    <color name="my_primary_light">#7BB3F0</color>
+    <color name="my_secondary">#64B5F6</color>
+    <color name="my_secondary_light">#90CAF9</color>
+
+    <!-- Dark Mode Backgrounds -->
+    <color name="background_color">#121212</color>
+    <color name="surface_color">#1E1E1E</color>
+
+    <!-- Light Mode Backgrounds (not used in dark theme) -->
+    <color name="background_color_dark">#121212</color>
+    <color name="surface_color_dark">#1E1E1E</color>
+    <color name="surface_variant_dark">#2D2D2D</color>
+    <color name="card_background_dark">#1E1E1E</color>
+    <color name="input_background_dark">#2D2D2D</color>
+    <color name="divider_color_dark">#333333</color>
+
+    <!-- Better accent color (softer than cyan) -->
+    <color name="accent_color">#64B5F6</color>
+    <color name="accent_color_dark">#64B5F6</color>
+
+    <!-- Dark Mode Text colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B3B3B3</color>
+    <color name="text_hint">#808080</color>
+
+    <!-- Light Mode Text colors (not used in dark theme) -->
+    <color name="text_primary_dark">#FFFFFF</color>
+    <color name="text_secondary_dark">#B3B3B3</color>
+    <color name="text_hint_dark">#808080</color>
+
+    <!-- Dark Mode Chat bubble colors -->
+    <color name="message_sent_bg">#4A90E2</color>
+    <color name="message_received_bg">#2D2D2D</color>
+    <color name="message_sent_text">#FFFFFF</color>
+    <color name="message_received_text">#FFFFFF</color>
+
+    <!-- Light Mode Chat bubble colors (not used in dark theme) -->
+    <color name="message_sent_bg_dark">#4A90E2</color>
+    <color name="message_received_bg_dark">#2D2D2D</color>
+    <color name="message_sent_text_dark">#FFFFFF</color>
+    <color name="message_received_text_dark">#FFFFFF</color>
+
+    <!-- Status colors (adjusted for dark theme) -->
+    <color name="success_color">#4CAF50</color>
+    <color name="error_color">#FF6B6B</color>
+    <color name="error_color_dark">#FF6B6B</color>
+    <color name="warning_color">#FFB74D</color>
+    <color name="warning_color_dark">#FFB74D</color>
+
+    <!-- Online status indicator -->
+    <color name="online_green">#4CAF50</color>
+    <color name="offline_grey">#808080</color>
+    <color name="offline_grey_dark">#808080</color>
+
+    <!-- Splash screen gradient colors -->
+    <color name="splash_start_light">#1A1A2E</color>
+    <color name="splash_end_light">#0F3460</color>
+    <color name="splash_start_dark">#1A1A2E</color>
+    <color name="splash_center_dark">#16213E</color>
+    <color name="splash_end_dark">#0F3460</color>
+
+    <!-- Button colors -->
+    <color name="button_primary_bg">#4A90E2</color>
+    <color name="button_primary_text">#FFFFFF</color>
+    <color name="button_secondary_stroke">#4A90E2</color>
+    <color name="button_secondary_text">#4A90E2</color>
+
+    <!-- Additional utility colors -->
+    <color name="transparent">#00000000</color>
+    <color name="semi_transparent_black">#80000000</color>
+    <color name="semi_transparent_white">#80FFFFFF</color>
+
+    <!-- Material Design elevation colors -->
+    <color name="elevation_overlay">#0DFFFFFF</color>
+
+    <!-- Error and Success Message Backgrounds (Dark Theme) -->
+    <color name="error_background">#2C1B1F</color>
+    <color name="error_background_dark">#2C1B1F</color>
+    <color name="success_background">#1B2F1B</color>
+    <color name="success_background_dark">#1B2F1B</color>
+
+    <!-- Input field colors for dark theme -->
+    <color name="input_stroke_color">#444444</color>
+    <color name="input_stroke_color_dark">#444444</color>
+    <color name="input_stroke_focused">#4A90E2</color>
+    <color name="input_background_light">#2D2D2D</color>
+</resources>
