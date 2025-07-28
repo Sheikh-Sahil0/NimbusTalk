@@ -60,8 +60,7 @@
 
     <!-- FIXED: Input Field Styles - No Overlapping -->
     <style name="InputField" parent="Widget.Material3.TextInputLayout.OutlinedBox">
-        <item name="boxStrokeColor">@color/input_stroke_focused</item>
-<!--        <item name="boxStrokeColorStateList">@color/input_stroke_state_list</item>-->
+        <item name="boxStrokeColor">@color/input_stroke_state_list</item>
         <item name="boxBackgroundColor">@color/input_background_light</item>
         <item name="hintTextColor">@color/text_hint</item>
         <item name="android:textColorHint">@color/text_hint</item>
