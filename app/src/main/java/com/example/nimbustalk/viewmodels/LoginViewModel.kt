@@ -9,8 +9,8 @@ import com.example.nimbustalk.enums.LoadingState
 import com.example.nimbustalk.enums.ValidationError
 import com.example.nimbustalk.models.AuthResponse
 import com.example.nimbustalk.utils.SharedPrefsHelper
+import com.example.nimbustalk.utils.ValidationUtils
 import kotlinx.coroutines.launch
-import java.util.regex.Pattern
 
 class LoginViewModel(
     private val authApi: AuthApi,
@@ -45,17 +45,6 @@ class LoginViewModel(
     private val _isFormValid = MutableLiveData<Boolean>()
     val isFormValid: LiveData<Boolean> = _isFormValid
 
-    // Email regex pattern
-    private val emailPattern = Pattern.compile(
-        "[a-zA-Z0-9\\+\\.\\_\\%\\-\\+]{1,256}" +
-                "\\@" +
-                "[a-zA-Z0-9][a-zA-Z0-9\\-]{0,64}" +
-                "(" +
-                "\\." +
-                "[a-zA-Z0-9][a-zA-Z0-9\\-]{0,25}" +
-                ")+"
-    )
-
     init {
         _loadingState.value = LoadingState.IDLE
         _emailError.value = ValidationError.NONE
@@ -64,30 +53,36 @@ class LoginViewModel(
     }
 
     /**
-     * Validate email input
+     * Set email validation result from Activity
+     */
+    fun setEmailValidation(validationError: ValidationError) {
+        _emailError.value = validationError
+        updateFormValidity()
+    }
+
+    /**
+     * Set password validation result from Activity
+     */
+    fun setPasswordValidation(validationError: ValidationError) {
+        _passwordError.value = validationError
+        updateFormValidity()
+    }
+
+    /**
+     * Validate email input using ValidationUtils
      */
     fun validateEmail(email: String): ValidationError {
-        val error = when {
-            email.isBlank() -> ValidationError.REQUIRED_FIELD
-            !emailPattern.matcher(email).matches() -> ValidationError.INVALID_EMAIL
-            else -> ValidationError.NONE
-        }
-
+        val error = ValidationUtils.validateEmail(email)
         _emailError.value = error
         updateFormValidity()
         return error
     }
 
     /**
-     * Validate password input
+     * Validate password input using ValidationUtils
      */
     fun validatePassword(password: String): ValidationError {
-        val error = when {
-            password.isBlank() -> ValidationError.REQUIRED_FIELD
-            password.length < 8 -> ValidationError.PASSWORD_TOO_SHORT
-            else -> ValidationError.NONE
-        }
-
+        val error = ValidationUtils.validatePassword(password)
         _passwordError.value = error
         updateFormValidity()
         return error
@@ -103,19 +98,28 @@ class LoginViewModel(
     }
 
     /**
-     * Perform login
+     * Perform login with comprehensive validation
      */
     fun login(email: String, password: String) {
         // Clear previous messages
         _errorMessage.value = ""
         _successMessage.value = ""
 
-        // Validate inputs
-        val emailValidation = validateEmail(email)
-        val passwordValidation = validatePassword(password)
+        // Clean and validate inputs using ValidationUtils
+        val cleanEmail = ValidationUtils.cleanInput(email)
+        val cleanPassword = password.trim()
 
-        if (!emailValidation.isValid() || !passwordValidation.isValid()) {
-            _errorMessage.value = "Please fix the errors above"
+        // Validate login form
+        val validationResults = ValidationUtils.validateLoginForm(cleanEmail, cleanPassword)
+
+        // Check if form is valid
+        if (!ValidationUtils.isFormValid(validationResults)) {
+            val firstError = ValidationUtils.getFirstErrorMessage(validationResults)
+            _errorMessage.value = firstError ?: "Please fix the errors above"
+
+            // Update individual field errors
+            _emailError.value = validationResults["email"] ?: ValidationError.NONE
+            _passwordError.value = validationResults["password"] ?: ValidationError.NONE
             return
         }
 
@@ -125,7 +129,7 @@ class LoginViewModel(
         // Perform login API call
         viewModelScope.launch {
             try {
-                val response = authApi.login(email.trim(), password)
+                val response = authApi.login(cleanEmail, cleanPassword)
 
                 when {
                     response.success && response.data != null -> {
@@ -219,5 +223,39 @@ class LoginViewModel(
      */
     fun getCurrentLoadingState(): LoadingState {
         return _loadingState.value ?: LoadingState.IDLE
+    }
+
+    /**
+     * Check if email format is valid (quick check)
+     */
+    fun isEmailFormatValid(email: String): Boolean {
+        return ValidationUtils.isValidEmailFormat(email)
+    }
+
+    /**
+     * Check if password is strong enough
+     */
+    fun isPasswordStrong(password: String): Boolean {
+        return ValidationUtils.isPasswordStrong(password)
+    }
+
+    /**
+     * Get password strength score for UI feedback
+     */
+    fun getPasswordStrength(password: String): Int {
+        return ValidationUtils.getPasswordStrength(password)
+    }
+
+    /**
+     * Manual validation trigger (for submit button)
+     */
+    fun validateForm(email: String, password: String): Boolean {
+        val emailError = validateEmail(email)
+        val passwordError = validatePassword(password)
+        return emailError.isValid() && passwordError.isValid()
+    }
+
+    companion object {
+        const val TAG = "LoginViewModel"
     }
 }
