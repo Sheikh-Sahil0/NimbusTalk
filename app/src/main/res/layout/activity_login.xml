@@ -167,6 +167,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_medium"
+            android:layout_marginStart="@dimen/spacing_small"
+            android:layout_marginEnd="@dimen/spacing_small"
             android:drawableStart="@drawable/ic_error"
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"

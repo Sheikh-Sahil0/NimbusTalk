@@ -3,8 +3,8 @@ package com.example.nimbustalk.utils
 object Constants {
 
     // Supabase Configuration (You'll replace these with your actual Supabase details)
-    const val SUPABASE_URL = "https://your-project.supabase.co"
-    const val SUPABASE_ANON_KEY = "your-anon-key-here"
+    const val SUPABASE_URL = "https://dbabnvejfwxdgrwwbybv.supabase.co"
+    const val SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRiYWJudmVqZnd4ZGdyd3dieWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3NjI0NjgsImV4cCI6MjA2OTMzODQ2OH0.JU1hAHEKdZxSkd0n49IdDRD88rkMdBsk2JIb7LgjzvY"
 
     // API Endpoints
     const val AUTH_SIGNUP = "/auth/v1/signup"
