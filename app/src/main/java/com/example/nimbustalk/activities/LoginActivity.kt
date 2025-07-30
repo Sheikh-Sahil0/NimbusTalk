@@ -38,7 +38,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var loadingProgress: CircularProgressIndicator
     private lateinit var errorText: TextView
     private lateinit var forgotPasswordText: TextView
-    private lateinit var registerText: TextView
+    private lateinit var createAccountText: TextView
 
     // ViewModel
     private lateinit var loginViewModel: LoginViewModel
@@ -71,7 +71,7 @@ class LoginActivity : AppCompatActivity() {
         loadingProgress = findViewById(R.id.loadingProgress)
         errorText = findViewById(R.id.errorText)
         forgotPasswordText = findViewById(R.id.forgotPasswordText)
-        registerText = findViewById(R.id.registerText)
+        createAccountText = findViewById(R.id.createAccountText)
     }
 
     // Initialize ViewModel
@@ -172,7 +172,7 @@ class LoginActivity : AppCompatActivity() {
         }
 
         // Register click
-        registerText.setOnClickListener {
+        createAccountText.setOnClickListener {
             navigateToRegister()
         }
     }
