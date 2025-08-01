@@ -15,6 +15,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "SUPABASE_URL", "\"https://ffxmtthqudolpzzcameg.supabase.co\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmeG10dGhxdWRvbHB6emNhbWVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5Njg4NDUsImV4cCI6MjA2OTU0NDg0NX0.j_kLp71tJXFoYG35B185hiQAkzp6jz9St-cePLGB-hg\"")
     }
 
     buildTypes {
@@ -26,6 +29,12 @@ android {
             )
         }
     }
+
+    // Enable BuildConfig generation
+    buildFeatures {
+        buildConfig = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -36,7 +45,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

@@ -1,10 +1,22 @@
 package com.example.nimbustalk.utils
 
+import com.example.nimbustalk.BuildConfig
+
 object Constants {
 
-    // Supabase Configuration (You'll replace these with your actual Supabase details)
-    const val SUPABASE_URL = "https://dbabnvejfwxdgrwwbybv.supabase.co"
-    const val SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRiYWJudmVqZnd4ZGdyd3dieWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3NjI0NjgsImV4cCI6MjA2OTMzODQ2OH0.JU1hAHEKdZxSkd0n49IdDRD88rkMdBsk2JIb7LgjzvY"
+    // Supabase Configuration
+    const val SUPABASE_URL = BuildConfig.SUPABASE_URL
+    const val SUPABASE_ANON_KEY = BuildConfig.SUPABASE_ANON_KEY
+
+    // Storage buckets
+    const val PROFILE_IMAGES_BUCKET = "profile-images"
+    const val CHAT_FILES_BUCKET = "chat-files"
+
+    // Database tables
+    const val USERS_TABLE = "users"
+    const val CHATS_TABLE = "chats"
+    const val MESSAGES_TABLE = "messages"
+    const val CHAT_PARTICIPANTS_TABLE = "chat_participants"
 
     // API Endpoints
     const val AUTH_SIGNUP = "/auth/v1/signup"
@@ -12,12 +24,6 @@ object Constants {
     const val AUTH_REFRESH = "/auth/v1/token?grant_type=refresh_token"
     const val AUTH_LOGOUT = "/auth/v1/logout"
     const val AUTH_RESET_PASSWORD = "/auth/v1/recover"
-
-    // Database Tables
-    const val TABLE_USERS = "users"
-    const val TABLE_CHATS = "chats"
-    const val TABLE_MESSAGES = "messages"
-    const val TABLE_USER_CHATS = "user_chats"
 
     // SharedPreferences Keys
     const val PREFS_NAME = "nimbus_talk_prefs"
