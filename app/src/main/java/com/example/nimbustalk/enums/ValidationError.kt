@@ -2,34 +2,44 @@ package com.example.nimbustalk.enums
 
 enum class ValidationError(val message: String) {
     NONE(""),
-    REQUIRED_FIELD("This field is required"),
-    INVALID_EMAIL("Please enter a valid email address"),
+
+    // Email validation errors
+    EMAIL_EMPTY("Email is required"),
+    EMAIL_INVALID("Please enter a valid email address"),
+
+    // Password validation errors
+    PASSWORD_EMPTY("Password is required"),
     PASSWORD_TOO_SHORT("Password must be at least 6 characters"),
-    PASSWORDS_DONT_MATCH("Passwords don't match"),
+    PASSWORD_TOO_LONG("Password must be less than 128 characters"),
+    PASSWORD_WEAK("Password should contain letters and numbers"),
+
+    // Confirm password validation errors
+    CONFIRM_PASSWORD_EMPTY("Please confirm your password"),
+    PASSWORDS_DO_NOT_MATCH("Passwords do not match"),
+
+    // Username validation errors
+    USERNAME_EMPTY("Username is required"),
     USERNAME_TOO_SHORT("Username must be at least 3 characters"),
-    USERNAME_INVALID("Username can only contain letters, numbers, and underscores"),
-    USERNAME_TAKEN("Username is already taken"),
-    DISPLAY_NAME_TOO_SHORT("Display name must be at least 2 characters"),
-    DISPLAY_NAME_TOO_LONG("Display name cannot exceed 50 characters"),
-    INVALID_PHONE("Please enter a valid phone number"),
-    FILE_TOO_LARGE("File size cannot exceed 10MB"),
-    INVALID_FILE_TYPE("File type not supported"),
-    MESSAGE_TOO_LONG("Message cannot exceed 1000 characters"),
-    NETWORK_ERROR("Network connection error"),
-    SERVER_ERROR("Server error occurred");
+    USERNAME_TOO_LONG("Username must be less than 50 characters"),
+    USERNAME_INVALID_CHARACTERS("Username can only contain letters, numbers, and underscores"),
+    USERNAME_ALREADY_EXISTS("Username is already taken"),
 
-    // Check if validation passed
-    fun isValid(): Boolean {
-        return this == NONE
-    }
+    // Display name validation errors
+    DISPLAY_NAME_EMPTY("Display name is required"),
+    DISPLAY_NAME_TOO_SHORT("Display name must be at least 1 character"),
+    DISPLAY_NAME_TOO_LONG("Display name must be less than 100 characters"),
 
-    // Note: getMessage() is automatically generated from val message: String
-    // You can access it directly as: validationError.message
+    // Network errors
+    NETWORK_ERROR("Please check your internet connection"),
+    SERVER_ERROR("Server error occurred. Please try again"),
+    TIMEOUT_ERROR("Request timed out. Please try again"),
 
-    companion object {
-        // Get validation error from string message
-        fun fromMessage(message: String): ValidationError {
-            return values().find { it.message == message } ?: SERVER_ERROR
-        }
-    }
+    // Auth errors
+    INVALID_CREDENTIALS("Invalid email or password"),
+    USER_NOT_FOUND("User not found"),
+    EMAIL_ALREADY_EXISTS("Email is already registered"),
+    WEAK_PASSWORD("Password is too weak"),
+
+    // General errors
+    UNKNOWN_ERROR("An unknown error occurred")
 }

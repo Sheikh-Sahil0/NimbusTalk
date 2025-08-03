@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nimbustalk.api.AuthApi
+import com.example.nimbustalk.api.UserApi
 import com.example.nimbustalk.enums.LoadingState
 import com.example.nimbustalk.enums.ValidationError
 import com.example.nimbustalk.models.AuthResponse
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 
 class LoginViewModel(
     private val authApi: AuthApi,
+    private val userApi: UserApi,
     private val sharedPrefsHelper: SharedPrefsHelper
 ) : ViewModel() {
 
@@ -21,23 +23,21 @@ class LoginViewModel(
     private val _loadingState = MutableLiveData<LoadingState>()
     val loadingState: LiveData<LoadingState> = _loadingState
 
-    // Error message
+    // Error and success messages
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
 
-    // Success message
     private val _successMessage = MutableLiveData<String>()
     val successMessage: LiveData<String> = _successMessage
 
-    // Login success event
+    // Login success
     private val _loginSuccess = MutableLiveData<Boolean>()
     val loginSuccess: LiveData<Boolean> = _loginSuccess
 
-    // Email validation
+    // Validation errors
     private val _emailError = MutableLiveData<ValidationError>()
     val emailError: LiveData<ValidationError> = _emailError
 
-    // Password validation
     private val _passwordError = MutableLiveData<ValidationError>()
     val passwordError: LiveData<ValidationError> = _passwordError
 
@@ -45,15 +45,159 @@ class LoginViewModel(
     private val _isFormValid = MutableLiveData<Boolean>()
     val isFormValid: LiveData<Boolean> = _isFormValid
 
+    // Current form values for validation
+    private var currentEmail = ""
+    private var currentPassword = ""
+
     init {
         _loadingState.value = LoadingState.IDLE
         _emailError.value = ValidationError.NONE
         _passwordError.value = ValidationError.NONE
         _isFormValid.value = false
+        _errorMessage.value = ""
+        _successMessage.value = ""
+        _loginSuccess.value = false
     }
 
     /**
-     * Set email validation result from Activity
+     * Login user
+     */
+    fun login(email: String, password: String) {
+        if (_loadingState.value == LoadingState.LOADING) return
+
+        viewModelScope.launch {
+            try {
+                _loadingState.value = LoadingState.LOADING
+                _errorMessage.value = ""
+
+                // Validate inputs
+                val cleanEmail = ValidationUtils.cleanInput(email)
+                if (!validateLoginForm(cleanEmail, password)) {
+                    _loadingState.value = LoadingState.ERROR
+                    _errorMessage.value = "Please fix the errors before proceeding"
+                    return@launch
+                }
+
+                // Attempt login
+                val response = authApi.login(cleanEmail, password)
+
+                if (response.isSuccess() && response.data != null) {
+                    handleLoginSuccess(response.data, cleanEmail)
+                } else {
+                    handleLoginError(response.getErrorMessage())
+                }
+
+            } catch (e: Exception) {
+                handleLoginError("Login failed: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Handle successful login
+     */
+    private suspend fun handleLoginSuccess(authResponse: AuthResponse, email: String) {
+        try {
+            val user = authResponse.user
+            val accessToken = authResponse.accessToken
+            val refreshToken = authResponse.refreshToken
+
+            if (user != null && !accessToken.isNullOrBlank() && !refreshToken.isNullOrBlank()) {
+                // Get complete user profile from database
+                val userProfileResponse = userApi.getUserProfile(user.id, accessToken)
+
+                if (userProfileResponse.isSuccess() && userProfileResponse.data != null) {
+                    val userProfile = userProfileResponse.data
+
+                    // Save authentication data with complete profile
+                    sharedPrefsHelper.saveAuthData(
+                        userId = userProfile.id,
+                        email = userProfile.email,
+                        username = userProfile.username,
+                        displayName = userProfile.displayName,
+                        accessToken = accessToken,
+                        refreshToken = refreshToken,
+                        profileImageUrl = userProfile.profileImageUrl
+                    )
+
+                    _loadingState.value = LoadingState.SUCCESS
+                    _successMessage.value = "Welcome back, ${userProfile.displayName}!"
+                    _loginSuccess.value = true
+
+                } else {
+                    // Fallback: Save basic auth data from auth response
+                    val username = user.userMetadata?.get("username") as? String ?: ""
+                    val displayName = user.userMetadata?.get("display_name") as? String ?: ""
+
+                    sharedPrefsHelper.saveAuthData(
+                        userId = user.id,
+                        email = user.email,
+                        username = username,
+                        displayName = displayName,
+                        accessToken = accessToken,
+                        refreshToken = refreshToken
+                    )
+
+                    _loadingState.value = LoadingState.SUCCESS
+                    _successMessage.value = "Welcome back!"
+                    _loginSuccess.value = true
+                }
+
+            } else {
+                handleLoginError("Login response incomplete")
+            }
+        } catch (e: Exception) {
+            handleLoginError("Failed to process login: ${e.message}")
+        }
+    }
+
+    /**
+     * Handle login error
+     */
+    private fun handleLoginError(message: String) {
+        _loadingState.value = LoadingState.ERROR
+        _errorMessage.value = when {
+            message.contains("invalid", ignoreCase = true) ||
+                    message.contains("credentials", ignoreCase = true) ||
+                    message.contains("password", ignoreCase = true) && message.contains("wrong", ignoreCase = true) ->
+                "Invalid email or password. Please check your credentials and try again."
+
+            message.contains("email", ignoreCase = true) && message.contains("not found", ignoreCase = true) ->
+                "Account not found. Please check your email or create a new account."
+
+            message.contains("email", ignoreCase = true) && message.contains("confirmed", ignoreCase = true) ->
+                "Please verify your email address before logging in."
+
+            message.contains("too many", ignoreCase = true) || message.contains("rate limit", ignoreCase = true) ->
+                "Too many login attempts. Please wait a few minutes and try again."
+
+            message.contains("network", ignoreCase = true) || message.contains("connection", ignoreCase = true) ->
+                "Please check your internet connection and try again."
+
+            message.contains("timeout", ignoreCase = true) ->
+                "Login request timed out. Please try again."
+
+            else -> "Login failed. Please try again."
+        }
+    }
+
+    /**
+     * Validate login form
+     */
+    private fun validateLoginForm(email: String, password: String): Boolean {
+        val emailValidation = ValidationUtils.validateEmail(email)
+        val passwordValidation = if (password.isEmpty()) ValidationError.PASSWORD_EMPTY else ValidationError.NONE
+
+        _emailError.value = emailValidation
+        _passwordError.value = passwordValidation
+
+        updateFormValidity()
+
+        return emailValidation == ValidationError.NONE && passwordValidation == ValidationError.NONE
+    }
+
+    /**
+     * Set email validation
      */
     fun setEmailValidation(validationError: ValidationError) {
         _emailError.value = validationError
@@ -61,7 +205,7 @@ class LoginViewModel(
     }
 
     /**
-     * Set password validation result from Activity
+     * Set password validation
      */
     fun setPasswordValidation(validationError: ValidationError) {
         _passwordError.value = validationError
@@ -69,146 +213,24 @@ class LoginViewModel(
     }
 
     /**
-     * Validate email input using ValidationUtils
+     * Update current form values
      */
-    fun validateEmail(email: String): ValidationError {
-        val error = ValidationUtils.validateEmail(email)
-        _emailError.value = error
+    fun updateFormValues(email: String, password: String) {
+        currentEmail = email
+        currentPassword = password
         updateFormValidity()
-        return error
     }
 
     /**
-     * Validate password input using ValidationUtils
-     */
-    fun validatePassword(password: String): ValidationError {
-        val error = ValidationUtils.validatePassword(password)
-        _passwordError.value = error
-        updateFormValidity()
-        return error
-    }
-
-    /**
-     * Update form validity based on all validations
+     * Update form validity
      */
     private fun updateFormValidity() {
-        val emailValid = _emailError.value?.isValid() == true
-        val passwordValid = _passwordError.value?.isValid() == true
-        _isFormValid.value = emailValid && passwordValid
-    }
+        val isValid = _emailError.value == ValidationError.NONE &&
+                _passwordError.value == ValidationError.NONE &&
+                currentEmail.isNotBlank() &&
+                currentPassword.isNotBlank()
 
-    /**
-     * Perform login with comprehensive validation
-     */
-    fun login(email: String, password: String) {
-        // Clear previous messages
-        _errorMessage.value = ""
-        _successMessage.value = ""
-
-        // Clean and validate inputs using ValidationUtils
-        val cleanEmail = ValidationUtils.cleanInput(email)
-        val cleanPassword = password.trim()
-
-        // Validate login form
-        val validationResults = ValidationUtils.validateLoginForm(cleanEmail, cleanPassword)
-
-        // Check if form is valid
-        if (!ValidationUtils.isFormValid(validationResults)) {
-            val firstError = ValidationUtils.getFirstErrorMessage(validationResults)
-            _errorMessage.value = firstError ?: "Please fix the errors above"
-
-            // Update individual field errors
-            _emailError.value = validationResults["email"] ?: ValidationError.NONE
-            _passwordError.value = validationResults["password"] ?: ValidationError.NONE
-            return
-        }
-
-        // Start loading
-        _loadingState.value = LoadingState.LOADING
-
-        // Perform login API call
-        viewModelScope.launch {
-            try {
-                val response = authApi.login(cleanEmail, cleanPassword)
-
-                when {
-                    response.success && response.data != null -> {
-                        val authResponse = response.data
-
-                        if (authResponse.hasValidTokens() && authResponse.hasUserData()) {
-                            // Save auth data
-                            saveAuthData(authResponse)
-
-                            // Update state
-                            _loadingState.value = LoadingState.SUCCESS
-                            _successMessage.value = response.message
-                            _loginSuccess.value = true
-                        } else {
-                            _loadingState.value = LoadingState.ERROR
-                            _errorMessage.value = "Invalid response from server"
-                        }
-                    }
-                    else -> {
-                        _loadingState.value = LoadingState.ERROR
-                        _errorMessage.value = response.getErrorMessage()
-                    }
-                }
-            } catch (e: Exception) {
-                _loadingState.value = LoadingState.ERROR
-                _errorMessage.value = "Login failed: ${e.message}"
-            }
-        }
-    }
-
-    /**
-     * Save authentication data to SharedPreferences
-     */
-    private fun saveAuthData(authResponse: AuthResponse) {
-        try {
-            // Save tokens
-            sharedPrefsHelper.saveAuthTokens(
-                accessToken = authResponse.accessToken ?: "",
-                refreshToken = authResponse.refreshToken ?: ""
-            )
-
-            // Save user profile
-            authResponse.user?.let { user ->
-                sharedPrefsHelper.saveUserProfile(
-                    userId = user.id,
-                    email = user.email,
-                    name = user.displayName.ifBlank { user.username },
-                    avatar = user.avatarUrl
-                )
-            }
-
-            // Mark user as logged in
-            sharedPrefsHelper.setUserLoggedIn(true)
-
-        } catch (e: Exception) {
-            // Handle save error
-            _errorMessage.value = "Failed to save login data: ${e.message}"
-        }
-    }
-
-    /**
-     * Clear error messages
-     */
-    fun clearError() {
-        _errorMessage.value = ""
-    }
-
-    /**
-     * Clear success messages
-     */
-    fun clearSuccess() {
-        _successMessage.value = ""
-    }
-
-    /**
-     * Reset login success event
-     */
-    fun resetLoginSuccess() {
-        _loginSuccess.value = false
+        _isFormValid.value = isValid
     }
 
     /**
@@ -219,43 +241,42 @@ class LoginViewModel(
     }
 
     /**
-     * Get current loading state
+     * Clear error message
      */
-    fun getCurrentLoadingState(): LoadingState {
-        return _loadingState.value ?: LoadingState.IDLE
+    fun clearError() {
+        _errorMessage.value = ""
     }
 
     /**
-     * Check if email format is valid (quick check)
+     * Clear success message
      */
-    fun isEmailFormatValid(email: String): Boolean {
-        return ValidationUtils.isValidEmailFormat(email)
+    fun clearSuccess() {
+        _successMessage.value = ""
     }
 
     /**
-     * Check if password is strong enough
+     * Reset login success state
      */
-    fun isPasswordStrong(password: String): Boolean {
-        return ValidationUtils.isPasswordStrong(password)
+    fun resetLoginSuccess() {
+        _loginSuccess.value = false
     }
 
     /**
-     * Get password strength score for UI feedback
+     * Clear all validation errors
      */
-    fun getPasswordStrength(password: String): Int {
-        return ValidationUtils.getPasswordStrength(password)
+    fun clearValidationErrors() {
+        _emailError.value = ValidationError.NONE
+        _passwordError.value = ValidationError.NONE
+        updateFormValidity()
     }
 
     /**
-     * Manual validation trigger (for submit button)
+     * Auto-fill email (for navigation from forgot password)
      */
-    fun validateForm(email: String, password: String): Boolean {
-        val emailError = validateEmail(email)
-        val passwordError = validatePassword(password)
-        return emailError.isValid() && passwordError.isValid()
-    }
-
-    companion object {
-        const val TAG = "LoginViewModel"
+    fun setEmail(email: String) {
+        currentEmail = email
+        val validationError = ValidationUtils.validateEmail(email)
+        _emailError.value = validationError
+        updateFormValidity()
     }
 }

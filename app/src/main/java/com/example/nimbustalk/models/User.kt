@@ -1,49 +1,66 @@
 package com.example.nimbustalk.models
 
-import com.example.nimbustalk.enums.UserStatus
+import com.google.gson.annotations.SerializedName
 
 data class User(
-    val id: String = "",
-    val email: String = "",
-    val username: String = "",
-    val displayName: String = "",
-    val avatarUrl: String? = null,
-    val status: UserStatus = UserStatus.OFFLINE,
-    val lastSeen: Long = System.currentTimeMillis(),
-    val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis(),
-    val isOnline: Boolean = false,
-    val deviceToken: String? = null // For push notifications
+    @SerializedName("id")
+    val id: String,
+
+    @SerializedName("username")
+    val username: String,
+
+    @SerializedName("display_name")
+    val displayName: String,
+
+    @SerializedName("email")
+    val email: String,
+
+    @SerializedName("profile_image_url")
+    val profileImageUrl: String? = null,
+
+    @SerializedName("bio")
+    val bio: String? = null,
+
+    @SerializedName("phone_number")
+    val phoneNumber: String? = null,
+
+    @SerializedName("status")
+    val status: String = "offline", // online, offline, away
+
+    @SerializedName("last_seen")
+    val lastSeen: String? = null,
+
+    @SerializedName("is_verified")
+    val isVerified: Boolean = false,
+
+    @SerializedName("created_at")
+    val createdAt: String? = null,
+
+    @SerializedName("updated_at")
+    val updatedAt: String? = null
 ) {
-    // Helper function to get display name or fallback to username
+    /**
+     * Get display name or fallback to username
+     */
     fun getDisplayNameOrUsername(): String {
         return if (displayName.isNotBlank()) displayName else username
     }
 
-    // Helper function to check if user was recently online (within 5 minutes)
-    fun isRecentlyOnline(): Boolean {
-        val fiveMinutesAgo = System.currentTimeMillis() - (5 * 60 * 1000)
-        return lastSeen > fiveMinutesAgo
+    /**
+     * Check if user is online
+     */
+    fun isOnline(): Boolean {
+        return status == "online"
     }
 
-    // Helper function to get status text for UI
+    /**
+     * Get formatted status text
+     */
     fun getStatusText(): String {
-        return when {
-            isOnline -> "Online"
-            isRecentlyOnline() -> "Recently online"
-            else -> "Last seen ${getFormattedLastSeen()}"
-        }
-    }
-
-    private fun getFormattedLastSeen(): String {
-        val now = System.currentTimeMillis()
-        val diff = now - lastSeen
-
-        return when {
-            diff < 60 * 1000 -> "just now"
-            diff < 60 * 60 * 1000 -> "${diff / (60 * 1000)} minutes ago"
-            diff < 24 * 60 * 60 * 1000 -> "${diff / (60 * 60 * 1000)} hours ago"
-            else -> "${diff / (24 * 60 * 60 * 1000)} days ago"
+        return when (status) {
+            "online" -> "Online"
+            "away" -> "Away"
+            else -> "Offline"
         }
     }
 }

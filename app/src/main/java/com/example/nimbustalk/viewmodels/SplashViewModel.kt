@@ -49,16 +49,16 @@ class SplashViewModel(application: Application) : AndroidViewModel(application) 
                 delay(1000)
 
                 // Check if user is logged in
-                val isLoggedIn = sharedPrefs.isUserLoggedIn()
+//                val isLoggedIn = sharedPrefs.isUserLoggedIn()
                 val hasValidTokens = !sharedPrefs.getAccessToken().isNullOrBlank()
                 val userId = sharedPrefs.getUserId()
 
                 when {
-                    !isLoggedIn -> {
-                        // User never logged in
-                        _loadingState.value = LoadingState.SUCCESS
-                        _authState.value = false
-                    }
+//                    !isLoggedIn -> {
+//                        // User never logged in
+//                        _loadingState.value = LoadingState.SUCCESS
+//                        _authState.value = false
+//                    }
 
                     !hasValidTokens || userId.isNullOrBlank() -> {
                         // User was logged in but tokens are missing
@@ -67,11 +67,11 @@ class SplashViewModel(application: Application) : AndroidViewModel(application) 
                         _authState.value = false
                     }
 
-                    !networkUtils.isNetworkAvailable() -> {
-                        // No network but user has valid local data
-                        _loadingState.value = LoadingState.SUCCESS
-                        _authState.value = true
-                    }
+//                    !networkUtils.isNetworkAvailable() -> {
+//                        // No network but user has valid local data
+//                        _loadingState.value = LoadingState.SUCCESS
+//                        _authState.value = true
+//                    }
 
                     else -> {
                         // Validate tokens with server

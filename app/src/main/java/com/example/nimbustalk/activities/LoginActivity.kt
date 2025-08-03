@@ -14,18 +14,19 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.nimbustalk.R
 import com.example.nimbustalk.api.AuthApi
 import com.example.nimbustalk.api.SupabaseClient
+import com.example.nimbustalk.api.UserApi
 import com.example.nimbustalk.enums.LoadingState
 import com.example.nimbustalk.enums.ValidationError
 import com.example.nimbustalk.utils.NetworkUtils
 import com.example.nimbustalk.utils.SharedPrefsHelper
 import com.example.nimbustalk.utils.ValidationUtils
 import com.example.nimbustalk.viewmodels.LoginViewModel
+import com.example.nimbustalk.viewmodels.LoginViewModelFactory
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import android.widget.TextView
-import com.example.nimbustalk.viewmodels.LoginViewModelFactory
 
 class LoginActivity : AppCompatActivity() {
 
@@ -61,7 +62,9 @@ class LoginActivity : AppCompatActivity() {
         setupTextWatchers()
     }
 
-    // Initialize UI components
+    /**
+     * Initialize UI components
+     */
     private fun initViews() {
         emailInputLayout = findViewById(R.id.emailInputLayout)
         emailEditText = findViewById(R.id.emailEditText)
@@ -74,16 +77,19 @@ class LoginActivity : AppCompatActivity() {
         createAccountText = findViewById(R.id.createAccountText)
     }
 
-    // Initialize ViewModel
+    /**
+     * Initialize ViewModel
+     */
     private fun initViewModel() {
         // Create dependencies
         val networkUtils = NetworkUtils(this)
         val supabaseClient = SupabaseClient(networkUtils)
         val authApi = AuthApi(supabaseClient)
+        val userApi = UserApi(supabaseClient)
         val sharedPrefsHelper = SharedPrefsHelper(this)
 
         // Create ViewModel using factory
-        val factory = LoginViewModelFactory(authApi, sharedPrefsHelper)
+        val factory = LoginViewModelFactory(authApi, userApi, sharedPrefsHelper)
         loginViewModel = ViewModelProvider(this, factory)[LoginViewModel::class.java]
     }
 
@@ -161,27 +167,27 @@ class LoginActivity : AppCompatActivity() {
             if (!loginViewModel.isLoading()) {
                 val email = ValidationUtils.cleanInput(emailEditText.text.toString())
                 val password = passwordEditText.text.toString()
+
                 loginViewModel.login(email, password)
             }
         }
 
         // Forgot password click
         forgotPasswordText.setOnClickListener {
-            // TODO: Navigate to ForgotPasswordActivity
-            Toast.makeText(this, "Forgot password feature coming soon!", Toast.LENGTH_SHORT).show()
+            navigateToForgotPassword()
         }
 
-        // Register click
+        // Create account click
         createAccountText.setOnClickListener {
             navigateToRegister()
         }
     }
 
     /**
-     * Setup text watchers for real-time validation using ValidationUtils
+     * Setup text watchers for real-time validation
      */
     private fun setupTextWatchers() {
-        // Email text watcher with ValidationUtils
+        // Email text watcher
         emailEditText.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -189,6 +195,7 @@ class LoginActivity : AppCompatActivity() {
                 val email = ValidationUtils.cleanInput(s.toString())
                 val validationError = ValidationUtils.validateEmail(email)
                 loginViewModel.setEmailValidation(validationError)
+                updateFormValues()
 
                 // Real-time UI feedback
                 if (email.isNotBlank()) {
@@ -199,14 +206,19 @@ class LoginActivity : AppCompatActivity() {
             }
         })
 
-        // Password text watcher with ValidationUtils
+        // Password text watcher
         passwordEditText.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
                 val password = s.toString()
-                val validationError = ValidationUtils.validatePassword(password)
+                val validationError = if (password.isEmpty()) {
+                    ValidationError.PASSWORD_EMPTY
+                } else {
+                    ValidationError.NONE
+                }
                 loginViewModel.setPasswordValidation(validationError)
+                updateFormValues()
 
                 // Real-time UI feedback
                 if (password.isNotBlank()) {
@@ -216,6 +228,16 @@ class LoginActivity : AppCompatActivity() {
                 }
             }
         })
+    }
+
+    /**
+     * Update form values in ViewModel
+     */
+    private fun updateFormValues() {
+        loginViewModel.updateFormValues(
+            email = emailEditText.text.toString(),
+            password = passwordEditText.text.toString()
+        )
     }
 
     /**
@@ -248,9 +270,7 @@ class LoginActivity : AppCompatActivity() {
         errorText.visibility = View.GONE
     }
 
-    /**
-     * Show email validation error
-     */
+    // Validation error display methods
     private fun showEmailError(validationError: ValidationError) {
         if (validationError != ValidationError.NONE) {
             emailInputLayout.error = validationError.message
@@ -260,17 +280,11 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Clear email validation error
-     */
     private fun clearEmailError() {
         emailInputLayout.isErrorEnabled = false
         emailInputLayout.error = null
     }
 
-    /**
-     * Show password validation error
-     */
     private fun showPasswordError(validationError: ValidationError) {
         if (validationError != ValidationError.NONE) {
             passwordInputLayout.error = validationError.message
@@ -280,9 +294,6 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Clear password validation error
-     */
     private fun clearPasswordError() {
         passwordInputLayout.isErrorEnabled = false
         passwordInputLayout.error = null
@@ -304,6 +315,19 @@ class LoginActivity : AppCompatActivity() {
     private fun navigateToRegister() {
         val intent = Intent(this, RegisterActivity::class.java)
         startActivity(intent)
+    }
+
+    /**
+     * Navigate to forgot password screen
+     */
+    private fun navigateToForgotPassword() {
+//        val intent = Intent(this, ForgotPasswordActivity::class.java)
+//        // Pre-fill email if user has entered one
+//        val email = emailEditText.text.toString().trim()
+//        if (email.isNotEmpty() && ValidationUtils.validateEmail(email) == ValidationError.NONE) {
+//            intent.putExtra("email", email)
+//        }
+//        startActivity(intent)
     }
 
     override fun onDestroy() {

@@ -3,7 +3,6 @@ package com.example.nimbustalk.utils
 import com.example.nimbustalk.BuildConfig
 
 object Constants {
-
     // Supabase Configuration
     const val SUPABASE_URL = BuildConfig.SUPABASE_URL
     const val SUPABASE_ANON_KEY = BuildConfig.SUPABASE_ANON_KEY
@@ -17,61 +16,52 @@ object Constants {
     const val CHATS_TABLE = "chats"
     const val MESSAGES_TABLE = "messages"
     const val CHAT_PARTICIPANTS_TABLE = "chat_participants"
+    const val MESSAGE_STATUS_TABLE = "message_status"
 
     // API Endpoints
     const val AUTH_SIGNUP = "/auth/v1/signup"
     const val AUTH_LOGIN = "/auth/v1/token?grant_type=password"
-    const val AUTH_REFRESH = "/auth/v1/token?grant_type=refresh_token"
     const val AUTH_LOGOUT = "/auth/v1/logout"
-    const val AUTH_RESET_PASSWORD = "/auth/v1/recover"
+    const val AUTH_REFRESH = "/auth/v1/token?grant_type=refresh_token"
+    const val AUTH_FORGOT_PASSWORD = "/auth/v1/recover"
+    const val AUTH_RESET_PASSWORD = "/auth/v1/token?grant_type=password"
 
-    // SharedPreferences Keys
-    const val PREFS_NAME = "nimbus_talk_prefs"
-    const val KEY_ACCESS_TOKEN = "access_token"
-    const val KEY_REFRESH_TOKEN = "refresh_token"
-    const val KEY_USER_ID = "user_id"
-    const val KEY_USER_EMAIL = "user_email"
-    const val KEY_USER_NAME = "user_name"
-    const val KEY_USER_AVATAR = "user_avatar"
-    const val KEY_IS_LOGGED_IN = "is_logged_in"
-    const val KEY_FIRST_TIME = "first_time"
+    // Shared Preferences Keys
+    const val PREF_NAME = "NimbusTalk_Prefs"
+    const val PREF_USER_ID = "user_id"
+    const val PREF_EMAIL = "email"
+    const val PREF_USERNAME = "username"
+    const val PREF_DISPLAY_NAME = "display_name"
+    const val PREF_PROFILE_IMAGE = "profile_image"
+    const val PREF_ACCESS_TOKEN = "access_token"
+    const val PREF_REFRESH_TOKEN = "refresh_token"
+    const val PREF_IS_LOGGED_IN = "is_logged_in"
+    const val PREF_THEME_MODE = "theme_mode"
 
-    // Request Codes
-    const val REQUEST_CODE_CAMERA = 100
-    const val REQUEST_CODE_GALLERY = 101
-    const val REQUEST_CODE_PERMISSIONS = 102
+    // Validation Constants
+    const val MIN_PASSWORD_LENGTH = 6
+    const val MAX_PASSWORD_LENGTH = 128
+    const val MIN_USERNAME_LENGTH = 3
+    const val MAX_USERNAME_LENGTH = 50
+    const val MIN_DISPLAY_NAME_LENGTH = 1
+    const val MAX_DISPLAY_NAME_LENGTH = 100
 
-    // Network
-    const val NETWORK_TIMEOUT = 30L // seconds
-    const val MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5MB
-    const val IMAGE_QUALITY = 80 // 0-100
+    // Network Constants
+    const val NETWORK_TIMEOUT = 30L
+    const val MAX_RETRY_ATTEMPTS = 3
+    const val RETRY_DELAY_MS = 1000L
 
-    // UI
-    const val SPLASH_DELAY = 2000L // milliseconds
-    const val TYPING_DELAY = 1000L // milliseconds
-    const val MESSAGE_PAGE_SIZE = 20
-    const val CHAT_PAGE_SIZE = 15
+    // File Upload Constants
+    const val MAX_IMAGE_SIZE_MB = 5
+    const val MAX_FILE_SIZE_MB = 10
+    const val IMAGE_QUALITY = 80
 
-    // Message Types
-    const val MESSAGE_TYPE_TEXT = "text"
-    const val MESSAGE_TYPE_IMAGE = "image"
-    const val MESSAGE_TYPE_FILE = "file"
+    // Chat Constants
+    const val MESSAGES_PER_PAGE = 50
+    const val TYPING_TIMEOUT_MS = 3000L
 
-    // User Status
-    const val STATUS_ONLINE = "online"
-    const val STATUS_OFFLINE = "offline"
-    const val STATUS_AWAY = "away"
-
-    // Error Messages
-    const val ERROR_NETWORK = "Network connection error"
-    const val ERROR_SERVER = "Server error occurred"
-    const val ERROR_UNAUTHORIZED = "Unauthorized access"
-    const val ERROR_NOT_FOUND = "Resource not found"
-    const val ERROR_VALIDATION = "Validation error"
-
-    // Success Messages
-    const val SUCCESS_LOGIN = "Login successful"
-    const val SUCCESS_REGISTER = "Registration successful"
-    const val SUCCESS_LOGOUT = "Logged out successfully"
-    const val SUCCESS_PASSWORD_RESET = "Password reset email sent"
+    // Theme Constants
+    const val THEME_SYSTEM = 0
+    const val THEME_LIGHT = 1
+    const val THEME_DARK = 2
 }

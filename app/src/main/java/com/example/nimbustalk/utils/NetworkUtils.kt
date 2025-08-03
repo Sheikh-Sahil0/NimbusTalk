@@ -7,25 +7,51 @@ import android.os.Build
 
 class NetworkUtils(private val context: Context) {
 
-    // Check if network is available
-    fun isNetworkAvailable(): Boolean {
+    // Check if device is connected to internet
+    fun isConnected(): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val network = connectivityManager.activeNetwork
             val capabilities = connectivityManager.getNetworkCapabilities(network)
-            capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+            capabilities?.let {
+                it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                        it.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                        it.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+            } ?: false
         } else {
             @Suppress("DEPRECATION")
             val networkInfo = connectivityManager.activeNetworkInfo
-            @Suppress("DEPRECATION")
             networkInfo?.isConnected == true
         }
     }
 
-    /**
-     * Check if connected to WiFi
-     */
+    // Get current network type
+    fun getNetworkType(): String {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = connectivityManager.activeNetwork
+            val capabilities = connectivityManager.getNetworkCapabilities(network)
+            when {
+                capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true -> "WiFi"
+                capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true -> "Mobile"
+                capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) == true -> "Ethernet"
+                else -> "Unknown"
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            val networkInfo = connectivityManager.activeNetworkInfo
+            when (networkInfo?.type) {
+                ConnectivityManager.TYPE_WIFI -> "WiFi"
+                ConnectivityManager.TYPE_MOBILE -> "Mobile"
+                ConnectivityManager.TYPE_ETHERNET -> "Ethernet"
+                else -> "Unknown"
+            }
+        }
+    }
+
+    // Check if connected to WiFi
     fun isWifiConnected(): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
@@ -35,16 +61,13 @@ class NetworkUtils(private val context: Context) {
             capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
         } else {
             @Suppress("DEPRECATION")
-            val networkInfo = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
-            @Suppress("DEPRECATION")
-            networkInfo?.isConnected == true
+            val networkInfo = connectivityManager.activeNetworkInfo
+            networkInfo?.type == ConnectivityManager.TYPE_WIFI && networkInfo.isConnected
         }
     }
 
-    /**
-     * Check if connected to mobile data
-     */
-    fun isMobileDataConnected(): Boolean {
+    // Check if connected to mobile data
+    fun isMobileConnected(): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -53,48 +76,8 @@ class NetworkUtils(private val context: Context) {
             capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true
         } else {
             @Suppress("DEPRECATION")
-            val networkInfo = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_MOBILE)
-            @Suppress("DEPRECATION")
-            networkInfo?.isConnected == true
+            val networkInfo = connectivityManager.activeNetworkInfo
+            networkInfo?.type == ConnectivityManager.TYPE_MOBILE && networkInfo.isConnected
         }
-    }
-
-    /**
-     * Get network type as string
-     */
-    fun getNetworkType(): String {
-        return when {
-            isWifiConnected() -> "WiFi"
-            isMobileDataConnected() -> "Mobile Data"
-            else -> "No Connection"
-        }
-    }
-
-    /**
-     * Check if network is metered (limited data)
-     */
-    fun isNetworkMetered(): Boolean {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        return connectivityManager.isActiveNetworkMetered
-    }
-
-    /**
-     * Get connection strength (0-4 scale)
-     */
-    fun getConnectionStrength(): Int {
-        // This is a simplified implementation
-        // In a real app, you might use signal strength APIs
-        return when {
-            !isNetworkAvailable() -> 0
-            isWifiConnected() -> 4
-            isMobileDataConnected() -> 3
-            else -> 1
-        }
-    }
-
-    companion object {
-        const val NETWORK_TIMEOUT_SECONDS = 30L
-        const val RETRY_DELAY_MS = 2000L
-        const val MAX_RETRY_ATTEMPTS = 3
     }
 }

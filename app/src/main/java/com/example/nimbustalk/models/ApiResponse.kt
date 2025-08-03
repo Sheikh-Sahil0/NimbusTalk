@@ -1,61 +1,85 @@
 package com.example.nimbustalk.models
 
+import com.google.gson.annotations.SerializedName
+
+/**
+ * Generic API response wrapper
+ */
 data class ApiResponse<T>(
-    val success: Boolean = false,
-    val message: String = "",
-    val data: T? = null,
-    val error: String? = null,
-    val statusCode: Int = 0,
-    val timestamp: Long = System.currentTimeMillis()
+    @SerializedName("data")
+    val data: T?,
+
+    @SerializedName("error")
+    val error: ApiError?,
+
+    @SerializedName("message")
+    val message: String?,
+
+    @SerializedName("status")
+    val status: Int = 200
 ) {
-    // Check if response is successful with data
-    fun isSuccessWithData(): Boolean {
-        return success && data != null
-    }
+    /**
+     * Check if the response is successful
+     */
+    fun isSuccess(): Boolean = error == null && status in 200..299
 
-    // Get error message from error field or message field
+    /**
+     * Get error message or default message
+     */
     fun getErrorMessage(): String {
+        return error?.message
+            ?: message
+            ?: "An unknown error occurred"
+    }
+}
+
+/**
+ * API error details
+ */
+data class ApiError(
+    @SerializedName("message")
+    val message: String,
+
+    @SerializedName("code")
+    val code: String? = null,
+
+    @SerializedName("details")
+    val details: String? = null,
+
+    @SerializedName("hint")
+    val hint: String? = null
+)
+
+/**
+ * Supabase error response
+ */
+data class SupabaseError(
+    @SerializedName("error")
+    val error: String?,
+
+    @SerializedName("error_description")
+    val errorDescription: String?,
+
+    @SerializedName("message")
+    val message: String?
+) {
+    fun getDisplayMessage(): String {
         return when {
+            !message.isNullOrBlank() -> message
+            !errorDescription.isNullOrBlank() -> errorDescription
             !error.isNullOrBlank() -> error
-            !message.isBlank() && !success -> message
-            else -> "Unknown error occurred"
-        }
-    }
-
-    // Get success message
-    fun getSuccessMessage(): String {
-        return if (success && message.isNotBlank()) message else "Operation successful"
-    }
-
-    companion object {
-        // Helper function to create success response
-        fun <T> success(data: T? = null, message: String = "Success"): ApiResponse<T> {
-            return ApiResponse(
-                success = true,
-                message = message,
-                data = data,
-                statusCode = 200
-            )
-        }
-
-        // Helper function to create error response
-        fun <T> error(message: String, statusCode: Int = 400): ApiResponse<T> {
-            return ApiResponse(
-                success = false,
-                message = message,
-                error = message,
-                statusCode = statusCode
-            )
-        }
-
-        // Helper function to create network error response
-        fun <T> networkError(): ApiResponse<T> {
-            return ApiResponse(
-                success = false,
-                message = "Network connection error",
-                error = "No internet connection",
-                statusCode = -1
-            )
+            else -> "An unknown error occurred"
         }
     }
 }
+
+/**
+ * Username availability response
+ */
+data class UsernameCheckResponse(
+    @SerializedName("available")
+    val available: Boolean,
+
+    @SerializedName("message")
+    val message: String?
+)
