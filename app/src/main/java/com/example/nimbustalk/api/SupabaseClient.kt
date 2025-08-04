@@ -46,6 +46,10 @@ class SupabaseClient(private val networkUtils: NetworkUtils) {
             val response = chain.proceed(request)
             Log.d("SupabaseClient", "Response: ${response.code} ${response.message}")
 
+            response.peekBody(2048).let { body ->
+                Log.d("SupabaseClient", "Response body preview: ${body.string()}")
+            }
+
             response
         }
         .build()
@@ -97,25 +101,139 @@ class SupabaseClient(private val networkUtils: NetworkUtils) {
     }
 
     /**
-     * Parse error response
+     * Parse error response with better error message extraction
      */
-    private fun parseErrorResponse(responseBody: String?): String {
+    private fun parseErrorResponse(responseBody: String?, statusCode: Int): String {
         return try {
             if (responseBody.isNullOrBlank()) {
-                "Unknown error occurred"
-            } else {
-                Log.d("SupabaseClient", "Error response body: $responseBody")
-                val supabaseError = gson.fromJson(responseBody, SupabaseError::class.java)
-                supabaseError.getDisplayMessage()
+                return getDefaultErrorMessage(statusCode)
+            }
+
+            Log.d("SupabaseClient", "Parsing error response: $responseBody")
+
+            // Try parsing as SupabaseError first
+            val supabaseError = gson.fromJson(responseBody, SupabaseError::class.java)
+
+            when {
+                // Handle specific auth errors
+                supabaseError.error != null -> {
+                    when {
+                        supabaseError.error.contains("invalid_grant", ignoreCase = true) ||
+                                supabaseError.error.contains("invalid_credentials", ignoreCase = true) ->
+                            "Invalid email or password"
+
+                        supabaseError.error.contains("user_not_found", ignoreCase = true) ->
+                            "Account not found"
+
+                        supabaseError.error.contains("email_not_confirmed", ignoreCase = true) ->
+                            "Please verify your email address"
+
+                        supabaseError.error.contains("signup_disabled", ignoreCase = true) ->
+                            "Registration is temporarily disabled"
+
+                        supabaseError.error.contains("email_address_invalid", ignoreCase = true) ->
+                            "Please enter a valid email address"
+
+                        supabaseError.error.contains("password_is_too_weak", ignoreCase = true) ->
+                            "Password is too weak"
+
+                        supabaseError.error.contains("user_already_registered", ignoreCase = true) ->
+                            "Email is already registered"
+
+                        else -> supabaseError.error
+                    }
+                }
+
+                supabaseError.errorDescription != null -> {
+                    when {
+                        supabaseError.errorDescription.contains("Invalid login credentials", ignoreCase = true) ->
+                            "Invalid email or password"
+
+                        supabaseError.errorDescription.contains("User already registered", ignoreCase = true) ->
+                            "Email is already registered"
+
+                        supabaseError.errorDescription.contains("Password should be at least", ignoreCase = true) ->
+                            "Password is too weak"
+
+                        supabaseError.errorDescription.contains("Unable to validate email address", ignoreCase = true) ->
+                            "Please enter a valid email address"
+
+                        supabaseError.errorDescription.contains("Email not confirmed", ignoreCase = true) ->
+                            "Please verify your email address"
+
+                        else -> supabaseError.errorDescription
+                    }
+                }
+
+                supabaseError.message != null -> {
+                    when {
+                        supabaseError.message.contains("duplicate key value", ignoreCase = true) &&
+                                supabaseError.message.contains("email", ignoreCase = true) ->
+                            "Email is already registered"
+
+                        supabaseError.message.contains("duplicate key value", ignoreCase = true) &&
+                                supabaseError.message.contains("username", ignoreCase = true) ->
+                            "Username is already taken"
+
+                        else -> supabaseError.message
+                    }
+                }
+
+                else -> {
+                    // Try to parse as a generic error object
+                    try {
+                        val errorMap = gson.fromJson(responseBody, Map::class.java) as? Map<String, Any>
+                        when {
+                            errorMap?.containsKey("msg") == true -> errorMap["msg"].toString()
+                            errorMap?.containsKey("message") == true -> errorMap["message"].toString()
+                            errorMap?.containsKey("error") == true -> errorMap["error"].toString()
+                            else -> getDefaultErrorMessage(statusCode)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("SupabaseClient", "Failed to parse as generic error", e)
+                        getDefaultErrorMessage(statusCode)
+                    }
+                }
             }
         } catch (e: Exception) {
             Log.e("SupabaseClient", "Error parsing error response", e)
-            responseBody ?: "Unknown error occurred"
+            // If JSON parsing fails, try to extract meaningful error from raw response
+            when {
+                responseBody?.contains("Invalid login credentials", ignoreCase = true) == true ->
+                    "Invalid email or password"
+                responseBody?.contains("User already registered", ignoreCase = true) == true ->
+                    "Email is already registered"
+                responseBody?.contains("duplicate key value", ignoreCase = true) == true -> {
+                    when {
+                        responseBody.contains("email", ignoreCase = true) -> "Email is already registered"
+                        responseBody.contains("username", ignoreCase = true) -> "Username is already taken"
+                        else -> "This information is already in use"
+                    }
+                }
+                else -> responseBody?.take(200) ?: getDefaultErrorMessage(statusCode)
+            }
         }
     }
 
     /**
-     * POST request - FIXED
+     * Get default error message based on status code
+     */
+    private fun getDefaultErrorMessage(statusCode: Int): String {
+        return when (statusCode) {
+            400 -> "Invalid request"
+            401 -> "Invalid email or password"
+            403 -> "Access denied"
+            404 -> "Not found"
+            409 -> "Data conflict - information already exists"
+            422 -> "Invalid data provided"
+            429 -> "Too many requests - please try again later"
+            500 -> "Server error - please try again"
+            else -> "Request failed"
+        }
+    }
+
+    /**
+     * POST request - Enhanced error handling
      */
     suspend fun post(
         endpoint: String,
@@ -130,7 +248,7 @@ class SupabaseClient(private val networkUtils: NetworkUtils) {
 
             val requestBody = jsonBody.toRequestBody("application/json".toMediaType())
 
-            // Build URL properly - FIXED
+            // Build URL properly
             val url = if (Constants.SUPABASE_URL.endsWith("/")) {
                 "${Constants.SUPABASE_URL.dropLast(1)}$endpoint"
             } else {
@@ -152,6 +270,7 @@ class SupabaseClient(private val networkUtils: NetworkUtils) {
             val response = executeRequest(request)
             val responseBody = response.body?.string()
 
+            Log.d("SupabaseClient", "Response code: ${response.code}")
             Log.d("SupabaseClient", "Response body: $responseBody")
 
             if (response.isSuccessful) {
@@ -162,7 +281,9 @@ class SupabaseClient(private val networkUtils: NetworkUtils) {
                     status = response.code
                 )
             } else {
-                val errorMessage = parseErrorResponse(responseBody)
+                val errorMessage = parseErrorResponse(responseBody, response.code)
+                Log.e("SupabaseClient", "Request failed with error: $errorMessage")
+
                 ApiResponse(
                     data = null,
                     error = ApiError(errorMessage),
@@ -172,17 +293,25 @@ class SupabaseClient(private val networkUtils: NetworkUtils) {
             }
         } catch (e: IOException) {
             Log.e("SupabaseClient", "Network error", e)
+            val errorMessage = when {
+                e.message?.contains("timeout", ignoreCase = true) == true ->
+                    "Request timed out - please check your connection"
+                e.message?.contains("Unable to resolve host", ignoreCase = true) == true ->
+                    "Unable to connect - please check your internet connection"
+                else -> "Network error - please check your connection"
+            }
+
             ApiResponse(
                 data = null,
-                error = ApiError("Network error: ${e.message}"),
-                message = "Network error occurred",
+                error = ApiError(errorMessage),
+                message = errorMessage,
                 status = 0
             )
         } catch (e: Exception) {
             Log.e("SupabaseClient", "Unexpected error", e)
             ApiResponse(
                 data = null,
-                error = ApiError("Unexpected error: ${e.message}"),
+                error = ApiError("An unexpected error occurred"),
                 message = "An unexpected error occurred",
                 status = 0
             )
@@ -190,7 +319,7 @@ class SupabaseClient(private val networkUtils: NetworkUtils) {
     }
 
     /**
-     * GET request - FIXED
+     * GET request - Enhanced error handling
      */
     suspend fun get(
         endpoint: String,
@@ -200,14 +329,13 @@ class SupabaseClient(private val networkUtils: NetworkUtils) {
         try {
             checkNetworkConnection()
 
-            // Build URL properly - FIXED
+            // Build URL properly
             val baseUrl = if (Constants.SUPABASE_URL.endsWith("/")) {
                 Constants.SUPABASE_URL.dropLast(1)
             } else {
                 Constants.SUPABASE_URL
             }
 
-            val urlBuilder = HttpUrl.Builder()
             val parsedUrl = "$baseUrl$endpoint".toHttpUrlOrNull()
 
             if (parsedUrl == null) {
@@ -237,6 +365,7 @@ class SupabaseClient(private val networkUtils: NetworkUtils) {
             val response = executeRequest(request)
             val responseBody = response.body?.string()
 
+            Log.d("SupabaseClient", "GET Response code: ${response.code}")
             Log.d("SupabaseClient", "GET Response body: $responseBody")
 
             if (response.isSuccessful) {
@@ -247,7 +376,7 @@ class SupabaseClient(private val networkUtils: NetworkUtils) {
                     status = response.code
                 )
             } else {
-                val errorMessage = parseErrorResponse(responseBody)
+                val errorMessage = parseErrorResponse(responseBody, response.code)
                 ApiResponse(
                     data = null,
                     error = ApiError(errorMessage),
@@ -257,21 +386,41 @@ class SupabaseClient(private val networkUtils: NetworkUtils) {
             }
         } catch (e: IOException) {
             Log.e("SupabaseClient", "Network error in GET", e)
+            val errorMessage = when {
+                e.message?.contains("timeout", ignoreCase = true) == true ->
+                    "Request timed out - please check your connection"
+                e.message?.contains("Unable to resolve host", ignoreCase = true) == true ->
+                    "Unable to connect - please check your internet connection"
+                else -> "Network error - please check your connection"
+            }
+
             ApiResponse(
                 data = null,
-                error = ApiError("Network error: ${e.message}"),
-                message = "Network error occurred",
+                error = ApiError(errorMessage),
+                message = errorMessage,
                 status = 0
             )
         } catch (e: Exception) {
             Log.e("SupabaseClient", "Unexpected error in GET", e)
             ApiResponse(
                 data = null,
-                error = ApiError("Unexpected error: ${e.message}"),
+                error = ApiError("An unexpected error occurred"),
                 message = "An unexpected error occurred",
                 status = 0
             )
         }
+    }
+
+    /**
+     * INSERT request to database table
+     */
+    suspend fun insert(
+        table: String,
+        data: Any,
+        accessToken: String? = null
+    ): ApiResponse<String> {
+        val endpoint = "/rest/v1/$table"
+        return post(endpoint, data, accessToken)
     }
 
     /**
@@ -290,17 +439,5 @@ class SupabaseClient(private val networkUtils: NetworkUtils) {
         filter?.let { queryParams["filter"] = it }
 
         return get(endpoint, accessToken, queryParams)
-    }
-
-    /**
-     * INSERT request to database table
-     */
-    suspend fun insert(
-        table: String,
-        data: Any,
-        accessToken: String? = null
-    ): ApiResponse<String> {
-        val endpoint = "/rest/v1/$table"
-        return post(endpoint, data, accessToken)
     }
 }

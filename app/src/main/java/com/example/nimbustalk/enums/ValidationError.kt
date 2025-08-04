@@ -6,6 +6,7 @@ enum class ValidationError(val message: String) {
     // Email validation errors
     EMAIL_EMPTY("Email is required"),
     EMAIL_INVALID("Please enter a valid email address"),
+    EMAIL_ALREADY_EXISTS("Email is already registered"),
 
     // Password validation errors
     PASSWORD_EMPTY("Password is required"),
@@ -37,8 +38,8 @@ enum class ValidationError(val message: String) {
     // Auth errors
     INVALID_CREDENTIALS("Invalid email or password"),
     USER_NOT_FOUND("User not found"),
-    EMAIL_ALREADY_EXISTS("Email is already registered"),
     WEAK_PASSWORD("Password is too weak"),
+    EMAIL_NOT_CONFIRMED("Please verify your email address"),
 
     // General errors
     UNKNOWN_ERROR("An unknown error occurred")

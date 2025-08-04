@@ -14,6 +14,7 @@ import com.example.nimbustalk.utils.ValidationUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import android.util.Log
 
 class RegisterViewModel(
     private val authApi: AuthApi,
@@ -109,6 +110,8 @@ class RegisterViewModel(
                 val cleanUsername = ValidationUtils.sanitizeUsername(username)
                 val cleanDisplayName = ValidationUtils.sanitizeDisplayName(displayName)
 
+                Log.d("RegisterViewModel", "Attempting registration for email: $cleanEmail, username: $cleanUsername")
+
                 // Double-check username availability
                 val usernameCheckResponse = userApi.checkUsernameAvailability(cleanUsername)
                 if (!usernameCheckResponse.isSuccess() || usernameCheckResponse.data != true) {
@@ -122,13 +125,20 @@ class RegisterViewModel(
                 // Attempt registration
                 val response = authApi.register(cleanEmail, password, cleanUsername, cleanDisplayName)
 
+                Log.d("RegisterViewModel", "Registration response status: ${response.status}")
+                Log.d("RegisterViewModel", "Registration response success: ${response.isSuccess()}")
+
                 if (response.isSuccess() && response.data != null) {
+                    Log.d("RegisterViewModel", "Registration successful, processing auth data")
                     handleRegistrationSuccess(response.data)
                 } else {
-                    handleRegistrationError(response.getErrorMessage())
+                    val errorMessage = response.getUserFriendlyErrorMessage()
+                    Log.e("RegisterViewModel", "Registration failed: $errorMessage")
+                    handleRegistrationError(errorMessage)
                 }
 
             } catch (e: Exception) {
+                Log.e("RegisterViewModel", "Registration exception", e)
                 handleRegistrationError("Registration failed: ${e.message}")
             }
         }
@@ -143,10 +153,14 @@ class RegisterViewModel(
             val accessToken = authResponse.accessToken
             val refreshToken = authResponse.refreshToken
 
+            Log.d("RegisterViewModel", "Auth response - User: ${user?.id}, Token: ${!accessToken.isNullOrBlank()}")
+
             if (user != null && !accessToken.isNullOrBlank() && !refreshToken.isNullOrBlank()) {
                 // Extract user metadata
                 val username = user.userMetadata?.get("username") as? String ?: ""
                 val displayName = user.userMetadata?.get("display_name") as? String ?: ""
+
+                Log.d("RegisterViewModel", "Saving auth data for user: $username")
 
                 // Save authentication data
                 sharedPrefsHelper.saveAuthData(
@@ -163,27 +177,74 @@ class RegisterViewModel(
                 _registrationSuccess.value = true
 
             } else {
-                handleRegistrationError("Registration response incomplete")
+                Log.e("RegisterViewModel", "Incomplete registration response")
+                handleRegistrationError("Registration response incomplete. Please try again.")
             }
         } catch (e: Exception) {
-            handleRegistrationError("Failed to process registration: ${e.message}")
+            Log.e("RegisterViewModel", "Error processing registration success", e)
+            handleRegistrationError("Failed to complete registration: ${e.message}")
         }
     }
 
     /**
-     * Handle registration error
+     * Handle registration error with specific error messages
      */
     private fun handleRegistrationError(message: String) {
         _loadingState.value = LoadingState.ERROR
+
+        // The message should already be user-friendly from getUserFriendlyErrorMessage()
+        // But we can add additional context and handle validation errors
         _errorMessage.value = when {
-            message.contains("email", ignoreCase = true) && message.contains("already", ignoreCase = true) ->
-                "Email is already registered. Please try logging in instead."
-            message.contains("password", ignoreCase = true) && message.contains("weak", ignoreCase = true) ->
-                "Password is too weak. Please use a stronger password."
-            message.contains("network", ignoreCase = true) || message.contains("connection", ignoreCase = true) ->
+            message.contains("email is already registered", ignoreCase = true) ||
+                    message.contains("User already registered", ignoreCase = true) -> {
+                // Also set email validation error
+                _emailError.value = ValidationError.EMAIL_ALREADY_EXISTS
+                updateFormValidity()
+                "This email is already registered. Please try logging in instead."
+            }
+
+            message.contains("username is already taken", ignoreCase = true) ||
+                    (message.contains("duplicate", ignoreCase = true) && message.contains("username", ignoreCase = true)) -> {
+                // Also set username validation error
+                _usernameError.value = ValidationError.USERNAME_ALREADY_EXISTS
+                _usernameAvailable.value = false
+                updateFormValidity()
+                "This username is already taken. Please choose a different one."
+            }
+
+            message.contains("Password is too weak", ignoreCase = true) ||
+                    message.contains("password should be at least", ignoreCase = true) -> {
+                // Also set password validation error
+                _passwordError.value = ValidationError.PASSWORD_WEAK
+                updateFormValidity()
+                "Password is too weak. Please include letters, numbers, and special characters."
+            }
+
+            message.contains("valid email", ignoreCase = true) -> {
+                // Also set email validation error
+                _emailError.value = ValidationError.EMAIL_INVALID
+                updateFormValidity()
+                "Please enter a valid email address."
+            }
+
+            message.contains("network", ignoreCase = true) ||
+                    message.contains("connection", ignoreCase = true) ->
                 "Please check your internet connection and try again."
+
+            message.contains("timeout", ignoreCase = true) ->
+                "Registration request timed out. Please try again."
+
+            message.contains("server error", ignoreCase = true) ->
+                "Server temporarily unavailable. Please try again in a moment."
+
+            message.contains("too many", ignoreCase = true) ||
+                    message.contains("rate limit", ignoreCase = true) ->
+                "Too many attempts. Please wait a moment and try again."
+
             else -> message
         }
+
+        Log.e("RegisterViewModel", "Registration error: ${_errorMessage.value}")
     }
 
     /**
@@ -208,21 +269,28 @@ class RegisterViewModel(
 
             try {
                 _usernameCheckLoading.value = true
+                Log.d("RegisterViewModel", "Checking username availability: $cleanUsername")
 
                 val response = userApi.checkUsernameAvailability(cleanUsername)
 
                 if (response.isSuccess()) {
-                    _usernameAvailable.value = response.data
-                    if (response.data == false) {
+                    val isAvailable = response.data ?: false
+                    _usernameAvailable.value = isAvailable
+
+                    Log.d("RegisterViewModel", "Username $cleanUsername availability: $isAvailable")
+
+                    if (!isAvailable) {
                         _usernameError.value = ValidationError.USERNAME_ALREADY_EXISTS
                     } else {
                         _usernameError.value = ValidationError.NONE
                     }
                 } else {
+                    Log.e("RegisterViewModel", "Username check failed: ${response.getErrorMessage()}")
                     _usernameAvailable.value = null
                 }
 
             } catch (e: Exception) {
+                Log.e("RegisterViewModel", "Username check exception", e)
                 _usernameAvailable.value = null
             } finally {
                 _usernameCheckLoading.value = false

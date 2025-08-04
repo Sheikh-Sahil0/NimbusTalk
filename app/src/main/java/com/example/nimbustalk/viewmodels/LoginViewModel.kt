@@ -12,6 +12,7 @@ import com.example.nimbustalk.models.AuthResponse
 import com.example.nimbustalk.utils.SharedPrefsHelper
 import com.example.nimbustalk.utils.ValidationUtils
 import kotlinx.coroutines.launch
+import android.util.Log
 
 class LoginViewModel(
     private val authApi: AuthApi,
@@ -78,16 +79,25 @@ class LoginViewModel(
                     return@launch
                 }
 
+                Log.d("LoginViewModel", "Attempting login for email: $cleanEmail")
+
                 // Attempt login
                 val response = authApi.login(cleanEmail, password)
 
+                Log.d("LoginViewModel", "Login response status: ${response.status}")
+                Log.d("LoginViewModel", "Login response success: ${response.isSuccess()}")
+
                 if (response.isSuccess() && response.data != null) {
+                    Log.d("LoginViewModel", "Login successful, processing auth data")
                     handleLoginSuccess(response.data, cleanEmail)
                 } else {
-                    handleLoginError(response.getErrorMessage())
+                    val errorMessage = response.getUserFriendlyErrorMessage()
+                    Log.e("LoginViewModel", "Login failed: $errorMessage")
+                    handleLoginError(errorMessage)
                 }
 
             } catch (e: Exception) {
+                Log.e("LoginViewModel", "Login exception", e)
                 handleLoginError("Login failed: ${e.message}")
             }
         }
@@ -102,12 +112,16 @@ class LoginViewModel(
             val accessToken = authResponse.accessToken
             val refreshToken = authResponse.refreshToken
 
+            Log.d("LoginViewModel", "Auth response - User: ${user?.id}, Token: ${!accessToken.isNullOrBlank()}")
+
             if (user != null && !accessToken.isNullOrBlank() && !refreshToken.isNullOrBlank()) {
                 // Get complete user profile from database
+                Log.d("LoginViewModel", "Fetching user profile for: ${user.id}")
                 val userProfileResponse = userApi.getUserProfile(user.id, accessToken)
 
                 if (userProfileResponse.isSuccess() && userProfileResponse.data != null) {
                     val userProfile = userProfileResponse.data
+                    Log.d("LoginViewModel", "User profile retrieved: ${userProfile.username}")
 
                     // Save authentication data with complete profile
                     sharedPrefsHelper.saveAuthData(
@@ -126,6 +140,7 @@ class LoginViewModel(
 
                 } else {
                     // Fallback: Save basic auth data from auth response
+                    Log.d("LoginViewModel", "Using fallback auth data save")
                     val username = user.userMetadata?.get("username") as? String ?: ""
                     val displayName = user.userMetadata?.get("display_name") as? String ?: ""
 
@@ -144,41 +159,51 @@ class LoginViewModel(
                 }
 
             } else {
-                handleLoginError("Login response incomplete")
+                Log.e("LoginViewModel", "Incomplete auth response")
+                handleLoginError("Login response incomplete. Please try again.")
             }
         } catch (e: Exception) {
-            handleLoginError("Failed to process login: ${e.message}")
+            Log.e("LoginViewModel", "Error processing login success", e)
+            handleLoginError("Failed to complete login: ${e.message}")
         }
     }
 
     /**
-     * Handle login error
+     * Handle login error with specific error messages
      */
     private fun handleLoginError(message: String) {
         _loadingState.value = LoadingState.ERROR
+
+        // The message should already be user-friendly from getUserFriendlyErrorMessage()
+        // But we can add additional context for specific cases
         _errorMessage.value = when {
-            message.contains("invalid", ignoreCase = true) ||
-                    message.contains("credentials", ignoreCase = true) ||
-                    message.contains("password", ignoreCase = true) && message.contains("wrong", ignoreCase = true) ->
+            message.contains("Invalid email or password", ignoreCase = true) ->
                 "Invalid email or password. Please check your credentials and try again."
 
-            message.contains("email", ignoreCase = true) && message.contains("not found", ignoreCase = true) ->
-                "Account not found. Please check your email or create a new account."
+            message.contains("email is already registered", ignoreCase = true) ->
+                "This account exists. Please try logging in instead."
 
-            message.contains("email", ignoreCase = true) && message.contains("confirmed", ignoreCase = true) ->
-                "Please verify your email address before logging in."
+            message.contains("verify your email", ignoreCase = true) ->
+                "Please verify your email address before logging in. Check your inbox for a verification link."
 
-            message.contains("too many", ignoreCase = true) || message.contains("rate limit", ignoreCase = true) ->
+            message.contains("too many", ignoreCase = true) ||
+                    message.contains("rate limit", ignoreCase = true) ->
                 "Too many login attempts. Please wait a few minutes and try again."
 
-            message.contains("network", ignoreCase = true) || message.contains("connection", ignoreCase = true) ->
+            message.contains("network", ignoreCase = true) ||
+                    message.contains("connection", ignoreCase = true) ->
                 "Please check your internet connection and try again."
 
             message.contains("timeout", ignoreCase = true) ->
                 "Login request timed out. Please try again."
 
-            else -> "Login failed. Please try again."
+            message.contains("server error", ignoreCase = true) ->
+                "Server temporarily unavailable. Please try again in a moment."
+
+            else -> message
         }
+
+        Log.e("LoginViewModel", "Login error: ${_errorMessage.value}")
     }
 
     /**
