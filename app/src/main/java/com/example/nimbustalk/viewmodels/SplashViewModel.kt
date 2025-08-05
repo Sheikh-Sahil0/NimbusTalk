@@ -11,6 +11,7 @@ import com.example.nimbustalk.enums.LoadingState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
+import android.util.Log
 
 class SplashViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -48,72 +49,46 @@ class SplashViewModel(application: Application) : AndroidViewModel(application) 
                 // Add minimum loading time for better UX
                 delay(1000)
 
-                // Check if user is logged in
-//                val isLoggedIn = sharedPrefs.isUserLoggedIn()
+                // Check authentication status
+                val isLoggedIn = sharedPrefs.isLoggedIn()
                 val hasValidTokens = !sharedPrefs.getAccessToken().isNullOrBlank()
                 val userId = sharedPrefs.getUserId()
 
+                Log.d("SplashViewModel", "Auth check - isLoggedIn: $isLoggedIn, hasTokens: $hasValidTokens, userId: $userId")
+
                 when {
-//                    !isLoggedIn -> {
-//                        // User never logged in
-//                        _loadingState.value = LoadingState.SUCCESS
-//                        _authState.value = false
-//                    }
+                    !isLoggedIn -> {
+                        // User never logged in or logged out
+                        Log.d("SplashViewModel", "User not logged in - going to login")
+                        _loadingState.value = LoadingState.SUCCESS
+                        _authState.value = false
+                    }
 
                     !hasValidTokens || userId.isNullOrBlank() -> {
-                        // User was logged in but tokens are missing
+                        // User was logged in but tokens are missing - clear data
+                        Log.d("SplashViewModel", "Invalid tokens - clearing auth data")
                         sharedPrefs.clearAuthData()
                         _loadingState.value = LoadingState.SUCCESS
                         _authState.value = false
                     }
 
-//                    !networkUtils.isNetworkAvailable() -> {
-//                        // No network but user has valid local data
-//                        _loadingState.value = LoadingState.SUCCESS
-//                        _authState.value = true
-//                    }
-
                     else -> {
-                        // Validate tokens with server
-                        validateTokenWithServer()
+                        // User has valid authentication data
+                        Log.d("SplashViewModel", "User authenticated - going to home")
+                        _loadingState.value = LoadingState.SUCCESS
+                        _authState.value = true
                     }
                 }
 
             } catch (e: Exception) {
+                Log.e("SplashViewModel", "Auth check error", e)
                 _errorMessage.value = "Initialization error: ${e.localizedMessage}"
                 _loadingState.value = LoadingState.ERROR
 
-                // Still allow app to continue after error
+                // Still allow app to continue after error - default to not authenticated
                 delay(1000)
                 _authState.value = false
             }
-        }
-    }
-
-    private suspend fun validateTokenWithServer() {
-        try {
-            // Simulate server validation
-            delay(800)
-
-            val accessToken = sharedPrefs.getAccessToken()
-            val refreshToken = sharedPrefs.getRefreshToken()
-
-            if (!accessToken.isNullOrBlank() && !refreshToken.isNullOrBlank()) {
-                // In a real app, make API call to validate token
-                // For now, assume token is valid
-                _loadingState.value = LoadingState.SUCCESS
-                _authState.value = true
-            } else {
-                // Invalid tokens
-                sharedPrefs.clearAuthData()
-                _loadingState.value = LoadingState.SUCCESS
-                _authState.value = false
-            }
-
-        } catch (e: Exception) {
-            // Server validation failed - still allow offline access
-            _loadingState.value = LoadingState.SUCCESS
-            _authState.value = true
         }
     }
 

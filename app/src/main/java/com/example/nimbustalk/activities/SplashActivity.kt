@@ -14,7 +14,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.example.nimbustalk.R
-import com.example.nimbustalk.utils.Constants
 import com.example.nimbustalk.viewmodels.SplashViewModel
 import com.example.nimbustalk.enums.LoadingState
 
@@ -209,9 +208,10 @@ class SplashActivity : AppCompatActivity() {
     private fun navigateToNextScreen(isAuthenticated: Boolean) {
         startExitAnimations {
             val intent = if (isAuthenticated) {
-//                Intent(this, HomeActivity::class.java)
-                Intent(this, LoginActivity::class.java)
+                // User is authenticated - go to HomeActivity
+                Intent(this, HomeActivity::class.java)
             } else {
+                // User is not authenticated - go to LoginActivity
                 Intent(this, LoginActivity::class.java)
             }
 

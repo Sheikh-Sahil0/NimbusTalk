@@ -11,14 +11,14 @@ import com.example.nimbustalk.utils.ThemeHelper
 
 class SettingsActivity : AppCompatActivity() {
 
-    private lateinit var sharedPrefs: SharedPrefsHelper
+    private lateinit var sharedPrefsHelper: SharedPrefsHelper
     private lateinit var currentThemeText: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
-        sharedPrefs = SharedPrefsHelper(this)
+        sharedPrefsHelper = SharedPrefsHelper(this)
 
         setupViews()
         updateThemeDisplay()
@@ -78,13 +78,13 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun logout() {
-//        // Clear user data
-//        sharedPrefs.clearAuthData()
-//
-//        // Go back to MainActivity (which will redirect to splash/login)
-//        val intent = Intent(this, MainActivity::class.java)
-//        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-//        startActivity(intent)
-//        finish()
+        // Clear authentication data
+        sharedPrefsHelper.clearAuthData()
+
+        // Navigate back to login
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
     }
 }
